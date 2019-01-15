@@ -13,6 +13,11 @@
             <artifactId>jaybird-jdk18</artifactId>
             <version>3.0.2</version>
         </dependency>
+        <dependency>
+            <groupId>com.sun.mail</groupId>
+            <artifactId>javax.mail</artifactId>
+            <version>1.6.2</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -56,6 +61,32 @@
                         <configuration>
                             <includeScope>compile</includeScope>
                             <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.0.2</version>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${pom.basedir}/target</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${pom.basedir}</directory>
+                                    <filtering>true</filtering>
+                                    <includes>
+                                        <include>*.bat</include>
+                                        <include>*.properties</include>
+                                    </includes>
+                                </resource>
+                            </resources>
                         </configuration>
                     </execution>
                 </executions>
