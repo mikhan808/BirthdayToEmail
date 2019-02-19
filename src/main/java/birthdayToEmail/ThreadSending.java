@@ -12,7 +12,7 @@ public class ThreadSending implements Runnable {
 
     @Override
     public void run() {
-        bot.getBirthdaysForSchedule(email);
+        bot.getTodayInfo(email);
         try {
             String query = "update mails set time_last_sending=current_timestamp where email = '" + email + "'";
             DatabaseToEmail.executeUpdate(query);

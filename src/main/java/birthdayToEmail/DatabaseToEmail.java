@@ -34,9 +34,42 @@ public class DatabaseToEmail {
         }
     }
 
+    public static Connection getConnection(String database, String port) {
+        try {
+            Properties connInfo = new Properties();
+            connInfo.put("user", "SYSDBA");
+            connInfo.put("password", "masterkey");
+            connInfo.put("charSet", "Cp1251");
+            return DriverManager.getConnection("jdbc:firebirdsql://localhost:" + port + "/D:/databases/" + database, connInfo);
+        } catch (Exception e) {
+            Log.error(e.getMessage());
+            return null;
+        }
+    }
+
+
     public static Statement getStatement() {
         try {
             return getConnection().createStatement();
+        } catch (Exception e) {
+            Log.error(e.getMessage());
+            return null;
+        }
+    }
+
+    public static Statement getStatement(String database, String port) {
+        try {
+            return getConnection(database, port).createStatement();
+        } catch (Exception e) {
+            Log.error(e.getMessage());
+            return null;
+        }
+    }
+
+    public static ResultSet getResultSet(String database, String port, String query) {
+        Log.add("Executing:" + query);
+        try {
+            return getStatement(database, port).executeQuery(query);
         } catch (Exception e) {
             Log.error(e.getMessage());
             return null;
@@ -81,6 +114,45 @@ public class DatabaseToEmail {
         PreparedStatement st = null;
         try {
             st = getPreparedStatement(query);
+            for (int i = 0; i < params.size(); i++) {
+                st.setObject(i + 1, params.get(i));
+            }
+            st.executeUpdate();
+        } catch (Exception e) {
+            Log.error(e.getMessage());
+        } finally {
+            releaseResources(st);
+        }
+    }
+
+    public static void executeUpdate(String database, String port, String query) {
+        Log.add("Executing:" + query);
+        Statement st = null;
+        try {
+            st = getStatement(database, port);
+            st.executeUpdate(query);
+        } catch (Exception e) {
+            Log.error(e.getMessage());
+        } finally {
+            releaseResources(st);
+        }
+    }
+
+    public static PreparedStatement getPreparedStatement(String database, String port, String sql) {
+        try {
+            return getConnection(database, port).prepareStatement(sql);
+        } catch (Exception e) {
+            Log.error(e.getMessage());
+            return null;
+        }
+    }
+
+
+    public static void executeUpdate(String database, String port, String query, List<Object> params) {
+        Log.add("Executing:" + query);
+        PreparedStatement st = null;
+        try {
+            st = getPreparedStatement(database, port, query);
             for (int i = 0; i < params.size(); i++) {
                 st.setObject(i + 1, params.get(i));
             }
@@ -212,83 +284,6 @@ public class DatabaseToEmail {
         return res;
     }
 
-    /*void insertBirthday(Chat chat, boolean public_man) {
-        try {
-            String[] res = getDataForInsertBirthday(chat);
-            String query = "INSERT INTO PEOPLE VALUES (\n";
-            for (int i = 0; i < res.length; i++) {
-                query += " " + res[i];
-                if (i < res.length - 1)
-                    query += ",";
-            }
-            query += ")";
-            try {
-                executeUpdate(query);
-            } catch (Exception e) {
-                Log.error(e.getMessage());
-            }
-            int id;
-            if (res[3] != null)
-                id = getPeopleID(res[1].replace("'", ""), res[2].replace("'", ""), res[3].replace("'", ""), res[5].replace("'", ""));
-            else id = getPeopleID(res[1].replace("'", ""), res[2].replace("'", ""), res[5].replace("'", ""));
-            if (public_man) {
-                List<Long> chats = allChats();
-                query = "INSERT INTO PUBLIC_PEOPLE VALUES (" + id + " )";
-                executeUpdate(query);
-                for (Long c : chats) {
-                    query = "INSERT INTO VIEW_PEOPLE VALUES (" + c + " , " + id + " )";
-                    executeUpdate(query);
-                }
-            } else {
-                query = "INSERT INTO VIEW_PEOPLE VALUES (" + chat.getId() + " , " + id + " )";
-                executeUpdate(query);
-            }
-            String txt = chat.getFirstName()+" "+chat.getLastName()+","+chat.getUserName()+" добавил человека:\n"+getFullNamePeople(id);
-            sendAdmin(txt);
-        } catch (Exception e) {
-            Log.error(e.getMessage());
-        }
-    }*/
-
-    /*void updateDataRecord(Chat chat, String field, String data) {
-        try {
-            String query = "UPDATE DIALOGS_DATA\n" +
-                    "SET " + field + " = '" + data + "'\n" +
-                    "where CHAT =  " + chat.getId();
-            executeUpdate(query);
-        } catch (Exception e) {
-            Log.error(e.getMessage());
-        }
-    }*/
-
-    /*void updateDataRecordAllNull(Chat chat) {
-        try {
-            String query = "UPDATE DIALOGS_DATA\n" +
-                    "SET FAMILIYA = NULL,\n" +
-                    "IMYA = NULL,\n" +
-                    "OTCHESTVO = NULL,\n" +
-                    "TELEFON = NULL,\n" +
-                    "BIRTHDAY = NULL,\n" +
-                    "DESCRIPTION = NULL\n" +
-                    "where CHAT =  " + chat.getId();
-            executeUpdate(query);
-        } catch (Exception e) {
-            Log.error(e.getMessage());
-        }
-    }*/
-
-
-    /*void updateStatus(Chat chat, int status) {
-        try {
-            String query = "UPDATE DIALOGS\n" +
-                    "SET STATUS = " + status + "\n" +
-                    "where CHAT =  " + chat.getId();
-            executeUpdate(query);
-        } catch (Exception e) {
-            Log.error(e.getMessage());
-        }
-    }*/
-
     String getFullNamePeople(int id) {
         String res = "Никакой Никак Никакович";
         try {
@@ -302,29 +297,6 @@ public class DatabaseToEmail {
         }
         return res;
     }
-
-    /*void deletePeople(Chat chat, int id) {
-        try {
-            String query = "delete from VIEW_PEOPLE where CHAT_ID =  " + chat.getId() + " AND PEOPLE_ID = " + id;
-            executeUpdate(query);
-        } catch (Exception e) {
-            Log.error(e.getMessage());
-        }
-        sendMsg(chat.getId(), "Мы вам больше не будем присылать сообщения о человеке, которого зовут:\n" + getFullNamePeople(id));
-    }*/
-
-    /*void deleteID(Chat chat) {
-        try {
-            String query = "delete from CHATS where ID =  " + chat.getId();
-            executeUpdate(query);
-        } catch (Exception e) {
-            Log.error(e.getMessage());
-        }
-    }*/
-
-    /*private void sendPhoto(String email, InputStream stream) {
-        sendMsg( email, PHOTO, stream);
-    }*/
 
     private Message buildMsg(String email) {
         try {
@@ -428,6 +400,12 @@ public class DatabaseToEmail {
         // Send messag
     }
 
+    void getTodayInfo(String email) {
+        getTodayBirthdays(email);
+        getTodayImenniniks(email, "MOLODEZH.FDB", "3055", "IMENINNIKI", "BIRTHDAY", "VOZRAST", "день рождения");
+        getTodayImenniniks(email, "MOLODEZH.FDB", "3055", "BAPTISTDAY_IMENINNIKI", "BAPTISTDAY", "DUH_VOZRAST", "день крещения");
+    }
+
     void getTodayBirthdays(String email) {
         String query = "select * from PEOPLE P where extract( month from P.BIRTHDAY) = EXTRACT ( month from current_date)\n" +
                 "and extract( day from P.BIRTHDAY) = EXTRACT ( day from current_date) ";
@@ -435,6 +413,14 @@ public class DatabaseToEmail {
         String vosrastText = "";
         String emptyMsg = "В нашем списке отсутствуют люди отмечающие сегодня день рождения.";
         sendInfoAboutPeople(email, query, firstText, vosrastText, emptyMsg, true, false);
+    }
+
+    void getTodayImenniniks(String email, String database, String port, String from, String nameColumnDay, String nameColumnVozrast, String naszvaniePrazdnika) {
+        String query = "select * from " + from;
+        String firstText = "Сегодня празднуют " + naszvaniePrazdnika + ":";
+        String vosrastText = "";
+        String emptyMsg = "В нашем списке отсутствуют люди отмечающие сегодня " + naszvaniePrazdnika + ".";
+        sendInfoAboutPeople(email, query, firstText, vosrastText, emptyMsg, true, false, database, port, nameColumnDay, nameColumnVozrast);
     }
 
     void getBirthdaysForSchedule(String email) {
@@ -521,6 +507,53 @@ public class DatabaseToEmail {
                 }
                 if (d != null) {
                     text += "\n" + d;
+                }
+                if (useId) {
+                    text += "\n№" + id + "\n";
+                }
+                addObjectToMsg(message, TEXT, text);
+            }
+            if (first) {
+                if (emptyMsg != null)
+                    addObjectToMsg(message, TEXT, emptyMsg);
+            }
+            sendMsg(message);
+            releaseResources(rs);
+        } catch (Exception e) {
+            Log.error(e.getMessage());
+            Message message = buildMsg(email);
+            addObjectToMsg(message, TEXT, e.getMessage());
+            sendMsg(message);
+        }
+    }
+
+    void sendInfoAboutPeople(String email, String query, String firstMsg, String vozrastText, String emptyMsg, boolean useId, boolean showBirthday, String database, String port, String nameBirthdayColumn, String nameVozrastColumn) {
+        try {
+            Message message = buildMsg(email);
+            ResultSet rs = getResultSet(database, port, query);
+            boolean first = true;
+            while (rs.next()) {
+                if (first) {
+                    addObjectToMsg(message, TEXT, firstMsg + "\n");
+                    first = false;
+                }
+                String id = rs.getString("ID");
+                String f = rs.getString("FAMILIYA");
+                String i = rs.getString("IMYA");
+                String o = rs.getString("OTCHESTVO");
+                String t = rs.getString("TELEFON");
+                Date date = rs.getDate(nameBirthdayColumn);
+                int v = rs.getInt(nameVozrastColumn);
+                String text = "\n" + f + " " + i;
+                if (o != null)
+                    text += " " + o;
+                if (showBirthday) {
+                    if (date != null)
+                        text += " " + date;
+                }
+                text += "\n" + vozrastText + v + " " + getYearFormated(v);
+                if (t != null) {
+                    text += "\nТелефон:" + t;
                 }
                 if (useId) {
                     text += "\n№" + id + "\n";

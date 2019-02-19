@@ -18,6 +18,6 @@ public class BirthdayToEmail {
         System.setErr(st);
         System.setOut(st);
         t.start();
-        bot.getTodayBirthdays("kalyachin@mail.ru");
+        bot.getTodayInfo("kalyachin@mail.ru");
     }
 }
