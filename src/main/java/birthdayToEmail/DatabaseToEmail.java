@@ -50,7 +50,7 @@ public class DatabaseToEmail {
 
     public static Statement getStatement() {
         try {
-            return getConnection().createStatement();
+            return getConnection("BIRTH (2).FDB", "3050").createStatement();
         } catch (Exception e) {
             Log.error(e.getMessage());
             return null;
@@ -101,7 +101,7 @@ public class DatabaseToEmail {
 
     public static PreparedStatement getPreparedStatement(String sql) {
         try {
-            return getConnection().prepareStatement(sql);
+            return getConnection("BIRTH (2).FDB", "3050").prepareStatement(sql);
         } catch (Exception e) {
             Log.error(e.getMessage());
             return null;
